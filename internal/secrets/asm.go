@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
@@ -13,6 +14,8 @@ import (
 )
 
 var _ SecretProvider = &ASMSecretProvider{}
+
+const secretPrefix = "flagops-secret-"
 
 // A secrets provider based on AWS Secrets Manager
 type ASMSecretProvider struct {
@@ -26,7 +29,7 @@ func NewASMSecretProvider(client *secretsmanager.Client) *ASMSecretProvider {
 }
 
 func (a *ASMSecretProvider) getIdentitySecretKey(id string) string {
-	return fmt.Sprintf("flagops-secret-%s", id)
+	return fmt.Sprintf("%s%s", secretPrefix, id)
 }
 
 // GetIdentitySecrets implements SecretProvider.
@@ -39,17 +42,8 @@ func (a *ASMSecretProvider) GetIdentitySecrets(id string) (Secrets, error) {
 		if !errors.As(err, &aerr) { // If some other error other than not found fail
 			return nil, err
 		}
-
-		_, err := a.client.CreateSecret(context.TODO(), &secretsmanager.CreateSecretInput{
-			Name: aws.String(a.getIdentitySecretKey(id)),
-		})
-		if err != nil {
-		  return nil, err
-		}
-
-		return Secrets{}, nil
+		return nil, ErrIdentityNotFound
 	}
-
 
 	results := Secrets{}
 	err = json.NewDecoder(bytes.NewBufferString(*res.SecretString)).Decode(&results)
@@ -64,22 +58,36 @@ func (a *ASMSecretProvider) GetIdentitySecrets(id string) (Secrets, error) {
 func (a *ASMSecretProvider) SetIdentitySecret(id string, key string, value string) error {
 	currentValues, err := a.GetIdentitySecrets(id)
 	if err != nil {
-	  return err
+		if !errors.Is(err, ErrIdentityNotFound) {
+			return err
+		}
+
+		// TODO Handle case where secret is marked for deletion
+
+		_, err := a.client.CreateSecret(context.TODO(), &secretsmanager.CreateSecretInput{
+			Name:         aws.String(a.getIdentitySecretKey(id)),
+			SecretString: aws.String(fmt.Sprintf("{\"%s\":\"%s\"}\n", key, value)),
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 	currentValues[key] = value
-	
+
 	payload := bytes.NewBuffer([]byte{})
 	err = json.NewEncoder(payload).Encode(currentValues)
 	if err != nil {
-	  return err
+		return err
 	}
 
-	_, err = a.client.UpdateSecret(context.TODO(), &secretsmanager.UpdateSecretInput{
-		SecretId: aws.String(a.getIdentitySecretKey(id)),
+	_, err = a.client.PutSecretValue(context.TODO(), &secretsmanager.PutSecretValueInput{
+		SecretId:     aws.String(a.getIdentitySecretKey(id)),
 		SecretString: aws.String(payload.String()),
 	})
 	if err != nil {
-	  return err
+		return err
 	}
 
 	return nil
@@ -109,13 +117,14 @@ func (a *ASMSecretProvider) GetAllIdentities() ([]string, error) {
 		}
 
 		for _, s := range res.SecretList {
-			ids = append(ids, *s.Name)
+			ids = append(ids, strings.TrimPrefix(*s.Name, secretPrefix))
+		}
+
+		if res.NextToken == nil {
+			break
 		}
 
 		token = *res.NextToken
-		if token == "" {
-			break
-		}
 	}
 
 	return ids, nil
@@ -125,9 +134,10 @@ func (a *ASMSecretProvider) GetAllIdentities() ([]string, error) {
 func (a *ASMSecretProvider) DeleteIdentity(id string) error {
 	_, err := a.client.DeleteSecret(context.TODO(), &secretsmanager.DeleteSecretInput{
 		SecretId: aws.String(a.getIdentitySecretKey(id)),
+		RecoveryWindowInDays: aws.Int64(7), // TODO Make configurable
 	})
 	if err != nil {
-	  return err
+		return err
 	}
 
 	return nil
@@ -137,22 +147,22 @@ func (a *ASMSecretProvider) DeleteIdentity(id string) error {
 func (a *ASMSecretProvider) DeleteIdentitySecret(id string, key string) error {
 	currentValues, err := a.GetIdentitySecrets(id)
 	if err != nil {
-	  return err
+		return err
 	}
 	delete(currentValues, key)
 
 	payload := bytes.NewBuffer([]byte{})
 	err = json.NewEncoder(payload).Encode(currentValues)
 	if err != nil {
-	  return err
+		return err
 	}
 
 	_, err = a.client.UpdateSecret(context.TODO(), &secretsmanager.UpdateSecretInput{
-		SecretId: aws.String(a.getIdentitySecretKey(id)),
+		SecretId:     aws.String(a.getIdentitySecretKey(id)),
 		SecretString: aws.String(payload.String()),
 	})
 	if err != nil {
-	  return err
+		return err
 	}
 
 	return nil

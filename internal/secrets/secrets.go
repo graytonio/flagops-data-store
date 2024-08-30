@@ -1,6 +1,13 @@
 package secrets
 
+import "errors"
+
 type Secrets map[string]string
+
+var (
+	ErrIdentityNotFound = errors.New("identity not found")
+	ErrSecretNotFound = errors.New("secret not found")
+)
 
 type SecretProvider interface {
 	// Returns a list of all available identities in the provider

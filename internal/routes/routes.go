@@ -179,6 +179,11 @@ func (r *Routes) GetIdentitySecrets(ctx *gin.Context) {
 
 	facts, err := r.SecretProvider.GetIdentitySecrets(identity)
 	if err != nil {
+		if errors.Is(err, secrets.ErrIdentityNotFound) {
+			ctx.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+		
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -199,13 +204,18 @@ func (r *Routes) GetIdentitySecret(ctx *gin.Context) {
 		return
 	}
 
-	secrets, err := r.SecretProvider.GetIdentitySecrets(identity)
+	identitySecrets, err := r.SecretProvider.GetIdentitySecrets(identity)
 	if err != nil {
+		if errors.Is(err, secrets.ErrIdentityNotFound) {
+			ctx.AbortWithError(http.StatusNotFound, err)
+			return
+		}
+
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	v, ok := secrets[key]
+	v, ok := identitySecrets[key]
 	if !ok {
 		ctx.AbortWithStatus(http.StatusNotFound)
 		return

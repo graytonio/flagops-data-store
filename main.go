@@ -37,9 +37,9 @@ func main() {
 	r.DELETE("/fact/:id/:fact", routes.DeleteIdentity) // Delete single fact for identity
 	
 	// Managing secrets
-	r.GET("/secrets/:id", routes.GetIdentitySecrets) // Get all identity secrets
-	r.GET("/fact/:id/:secret", routes.GetIdentitySecret) // Get specific secret of identity
-	r.PUT("/fact/:id/:secret", routes.SetIdentitySecret) // Set secret for identity
+	r.GET("/secret/:id", routes.GetIdentitySecrets) // Get all identity secrets
+	r.GET("/secret/:id/:secret", routes.GetIdentitySecret) // Get specific secret of identity
+	r.PUT("/secret/:id/:secret", routes.SetIdentitySecret) // Set secret for identity
 	r.DELETE("/secret/:id/:secret", routes.DeleteIdentitySecret) // Delete secret for identity
 
 	if err := r.Run(":8080"); err != nil {

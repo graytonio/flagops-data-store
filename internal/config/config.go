@@ -3,9 +3,12 @@ package config
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/graytonio/flagops-config-storage/internal/facts"
 	"github.com/graytonio/flagops-config-storage/internal/secrets"
 	"github.com/redis/go-redis/v9"
@@ -50,12 +53,21 @@ func createFactProvider() (facts.FactProvider, error) {
 func createSecretsProvider() (secrets.SecretProvider, error) {
 	switch viper.GetString("secret_provider") {
 	case "asm":
-		config, err := config.LoadDefaultConfig(context.TODO())
+		cfgOpts := []func(*config.LoadOptions) error{}
+		if os.Getenv("LOCAL_AWS_ENDPOINT") != "" {
+			cfgOpts = append(cfgOpts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("accessKey", "secretKey", "token")))
+		}
+
+		config, err := config.LoadDefaultConfig(context.TODO(), cfgOpts...)
 		if err != nil {
 		  return nil, err
 		}
 
-		return secrets.NewASMSecretProvider(secretsmanager.NewFromConfig(config)), nil
+		return secrets.NewASMSecretProvider(secretsmanager.NewFromConfig(config, func(o *secretsmanager.Options) {
+			if os.Getenv("LOCAL_AWS_ENDPOINT") != "" {
+				o.BaseEndpoint = aws.String(os.Getenv("LOCAL_AWS_ENDPOINT"))
+			}
+		})), nil
 	}
 
 	return nil, fmt.Errorf("no such secret provider %s", viper.GetString("secret_provider"))
