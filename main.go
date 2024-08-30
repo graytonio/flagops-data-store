@@ -12,7 +12,12 @@ import (
 func main() {
 	r := gin.Default()
 
-	r.Use(ginprom.PromMiddleware(ginprom.NewDefaultOpts()))
+	ginPromOpts := ginprom.NewDefaultOpts()
+	ginPromOpts.EndpointLabelMappingFn = func(c *gin.Context) string {
+		return c.FullPath()
+	}
+
+	r.Use(ginprom.PromMiddleware(ginPromOpts))
 	r.GET("/metrics", ginprom.PromHandler(promhttp.Handler()))
 
 

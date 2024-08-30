@@ -23,3 +23,12 @@ The facts both from the ArgoCD application template as well as any facts configu
 This allows other mechanisms outside of the git state to update and fetch metadata about a deployment and update facts based on automated processes.
 
 As an example, for a process each customer generates a single tenant deployment which is tied to their account. Based on what tier this customer signed up for they receive a max replica count of either 1, 3 or 5. The account level can change and is not stored in git but in some CMS system. This system can export the account level data through a webhook or api call to update the facts for customers as soon as it changes. This change is then applied to the feature flag rules which updates the max replicas accordingly.
+
+## Roadmap
+
+- [ ] Users and permissions
+- [ ] UI for visualizing
+- [ ] OpenFeature Provider Golang
+- [ ] OpenFeature Provider Python
+- [ ] Logging
+- [ ] Metrics
