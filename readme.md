@@ -27,8 +27,8 @@ As an example, for a process each customer generates a single tenant deployment 
 ## Roadmap
 
 - [ ] Users and permissions
+- [ ] Fact provider Postgres
 - [ ] UI for visualizing
-- [ ] OpenFeature Provider Golang
+- [ ] Test OpenFeature Provider Golang
 - [ ] OpenFeature Provider Python
-- [ ] Logging
 - [ ] Metrics

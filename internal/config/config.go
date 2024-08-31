@@ -9,8 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/graytonio/flagops-config-storage/internal/facts"
-	"github.com/graytonio/flagops-config-storage/internal/secrets"
+	"github.com/graytonio/flagops-data-storage/internal/facts"
+	"github.com/graytonio/flagops-data-storage/internal/secrets"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 )
@@ -58,7 +58,7 @@ func createSecretsProvider() (secrets.SecretProvider, error) {
 			cfgOpts = append(cfgOpts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("accessKey", "secretKey", "token")))
 		}
 
-		config, err := config.LoadDefaultConfig(context.TODO(), cfgOpts...)
+		config, err := config.LoadDefaultConfig(context.Background(), cfgOpts...)
 		if err != nil {
 		  return nil, err
 		}

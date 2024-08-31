@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-config-storage/internal/facts"
-	"github.com/graytonio/flagops-config-storage/internal/secrets"
+	"github.com/graytonio/flagops-data-storage/internal/facts"
+	"github.com/graytonio/flagops-data-storage/internal/secrets"
 )
 
 type Routes struct {
@@ -14,23 +14,22 @@ type Routes struct {
 	SecretProvider secrets.SecretProvider
 }
 
-type getAllIdentitiesResponse struct {
-	Identities map[string]identieiesSupportedProviders `json:"identities"`
-}
-
 type identieiesSupportedProviders struct{
 	Facts bool `json:"facts"`
 	Secrets bool `json:"secrets"`
 }
+type getAllIdentitiesResponse struct {
+	Identities map[string]identieiesSupportedProviders `json:"identities"`
+}
 
 func (r *Routes) GetAllIdentities(ctx *gin.Context) {
-	factsIds, err := r.FactProvider.GetAllIdentities()
+	factsIds, err := r.FactProvider.GetAllIdentities(ctx)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	secretsIds, err := r.SecretProvider.GetAllIdentities()
+	secretsIds, err := r.SecretProvider.GetAllIdentities(ctx)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -61,13 +60,13 @@ func (r *Routes) DeleteIdentity(ctx *gin.Context) {
 		return
 	}
 
-	err := r.FactProvider.DeleteIdentity(identity)
+	err := r.FactProvider.DeleteIdentity(ctx, identity)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	err = r.SecretProvider.DeleteIdentity(identity)
+	err = r.SecretProvider.DeleteIdentity(ctx, identity)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -81,13 +80,17 @@ func (r *Routes) GetIdentityFacts(ctx *gin.Context) {
 		return
 	}
 
-	facts, err := r.FactProvider.GetIdentityFacts(identity)
+	identityFacts, err := r.FactProvider.GetIdentityFacts(ctx, identity)
 	if err != nil {
+		if errors.Is(err, facts.ErrIdentityNotFound) {
+			ctx.AbortWithError(http.StatusNotFound, err)
+			return
+		}
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, facts)
+	ctx.JSON(http.StatusOK, identityFacts)
 }
 
 func (r *Routes) GetIdentityFact(ctx *gin.Context) {
@@ -103,7 +106,7 @@ func (r *Routes) GetIdentityFact(ctx *gin.Context) {
 		return
 	}
 
-	facts, err := r.FactProvider.GetIdentityFacts(identity)
+	facts, err := r.FactProvider.GetIdentityFacts(ctx, identity)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -143,7 +146,7 @@ func (r *Routes) SetIdentityFact(ctx *gin.Context) {
 		return
 	}
 
-	err := r.FactProvider.SetIdentityFact(identity, key, body.Value)
+	err := r.FactProvider.SetIdentityFact(ctx, identity, key, body.Value)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -163,7 +166,7 @@ func (r *Routes) DeleteIdentityFact(ctx *gin.Context) {
 		return
 	}
 
-	err := r.FactProvider.DeleteIdentityFact(identity, key)
+	err := r.FactProvider.DeleteIdentityFact(ctx, identity, key)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -177,7 +180,7 @@ func (r *Routes) GetIdentitySecrets(ctx *gin.Context) {
 		return
 	}
 
-	facts, err := r.SecretProvider.GetIdentitySecrets(identity)
+	facts, err := r.SecretProvider.GetIdentitySecrets(ctx, identity)
 	if err != nil {
 		if errors.Is(err, secrets.ErrIdentityNotFound) {
 			ctx.AbortWithError(http.StatusNotFound, err)
@@ -204,7 +207,7 @@ func (r *Routes) GetIdentitySecret(ctx *gin.Context) {
 		return
 	}
 
-	identitySecrets, err := r.SecretProvider.GetIdentitySecrets(identity)
+	identitySecrets, err := r.SecretProvider.GetIdentitySecrets(ctx, identity)
 	if err != nil {
 		if errors.Is(err, secrets.ErrIdentityNotFound) {
 			ctx.AbortWithError(http.StatusNotFound, err)
@@ -249,7 +252,7 @@ func (r *Routes) SetIdentitySecret(ctx *gin.Context) {
 		return
 	}
 
-	err := r.SecretProvider.SetIdentitySecret(identity, key, body.Value)
+	err := r.SecretProvider.SetIdentitySecret(ctx, identity, key, body.Value)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -269,7 +272,7 @@ func (r *Routes) DeleteIdentitySecret(ctx *gin.Context) {
 		return
 	}
 
-	err := r.SecretProvider.DeleteIdentitySecret(identity, key)
+	err := r.SecretProvider.DeleteIdentitySecret(ctx, identity, key)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return

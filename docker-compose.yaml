@@ -15,8 +15,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      aws:
-        condition: service_started
   redis:
     image: redis:latest
     healthcheck:
@@ -25,9 +23,3 @@ services:
       timeout: 3s
       retries: 5
     command: ["redis-server"]
-  aws:
-    image: localstack/localstack:3.6.0
-    ports:
-      - "4566:4566"
-    environment:
-      - DEBUG=${DEBUG:-0}

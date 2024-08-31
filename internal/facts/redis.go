@@ -1,12 +1,13 @@
 package facts
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
 )
 
 var _ FactProvider = &RedisFactProvider{}
@@ -25,16 +26,38 @@ func (r *RedisFactProvider) getIdentityFactPath(id string, key string) string {
 	return fmt.Sprintf("%s:%s", id, key)
 }
 
+func (r *RedisFactProvider) getLogEntry(ctx *gin.Context) *logrus.Entry {
+	entry := logrus.WithFields(logrus.Fields{
+		"caller_path": ctx.FullPath(),
+		"provider":    "redis",
+		"api":         "facts",
+	})
+
+	if ctx.Param("id") != "" {
+		entry = entry.WithField("id", ctx.Param("id"))
+	}
+
+	if ctx.Param("key") != "" {
+		entry = entry.WithField("key", ctx.Param("key"))
+	}
+
+	return entry
+}
+
 // GetAllIdentities implements FactProvider.
-func (r *RedisFactProvider) GetAllIdentities() ([]string, error) {
+func (r *RedisFactProvider) GetAllIdentities(ctx *gin.Context) ([]string, error) {
+	log := r.getLogEntry(ctx)
+	log.Debug("fetching all identities from provider")
 	prefixSet := make(map[string]struct{})
 	cursor := uint64(0)
 
 	for {
-		keys, nextCursor, err := r.client.Scan(context.TODO(), cursor, "*", 100).Result()
+		keys, nextCursor, err := r.client.Scan(ctx, cursor, "*", 100).Result()
 		if err != nil {
+			log.WithError(err).Error("could not fetch scan page from provider")
 			return nil, err
 		}
+		log.WithField("identities", len(keys)).Debug("fetched page of identities")
 
 		for _, key := range keys {
 			parts := strings.SplitN(key, ":", 2)
@@ -58,23 +81,28 @@ func (r *RedisFactProvider) GetAllIdentities() ([]string, error) {
 }
 
 // GetIdentityFacts implements FactProvider.
-func (r *RedisFactProvider) GetIdentityFacts(id string) (Facts, error) {
+func (r *RedisFactProvider) GetIdentityFacts(ctx *gin.Context, id string) (Facts, error) {
+	log := r.getLogEntry(ctx)
 	if id == "" {
+		log.Debug("called with no identity")
 		return nil, errors.New("id is blank")
 	}
-	
+
 	result := map[string]string{}
 	cursor := uint64(0)
 
 	for {
-		keys, nextCursor, err := r.client.Scan(context.TODO(), cursor, fmt.Sprintf("%s:*", id), 100).Result()
+		keys, nextCursor, err := r.client.Scan(ctx, cursor, fmt.Sprintf("%s:*", id), 100).Result()
 		if err != nil {
+			log.WithError(err).Error("could not fetch scan page from provider")
 			return nil, err
 		}
+		log.WithField("keys", len(keys)).Debug("fetched page of keys")
 
 		for _, key := range keys {
-			val, err := r.client.Get(context.TODO(), key).Result()
+			val, err := r.client.Get(ctx, key).Result()
 			if err != nil {
+				log.WithError(err).Error("could not fetch key from provider")
 				return nil, err
 			}
 			parts := strings.SplitN(key, ":", 2)
@@ -90,25 +118,36 @@ func (r *RedisFactProvider) GetIdentityFacts(id string) (Facts, error) {
 		}
 	}
 
+	if len(result) == 0 {
+		return nil, ErrIdentityNotFound
+	}
+
 	return result, nil
 }
 
 // SetIdentityFact implements FactProvider.
-func (r *RedisFactProvider) SetIdentityFact(id string, key string, value string) error {
+func (r *RedisFactProvider) SetIdentityFact(ctx *gin.Context, id string, key string, value string) error {
+	log := r.getLogEntry(ctx)
+	log.Debug("setting fact for identity")
 	if id == "" {
+		log.Debug("called with no identity")
 		return errors.New("id is blank")
 	}
 
 	if key == "" {
+		log.Debug("called with no key")
 		return errors.New("key is blank")
 	}
 
 	if value == "" {
+		log.Debug("called with no value")
 		return errors.New("value is blank")
 	}
 
-	err := r.client.Set(context.TODO(), r.getIdentityFactPath(id, key), value, 0).Err()
+	log.Debug("setting identity fact")
+	err := r.client.Set(ctx, r.getIdentityFactPath(id, key), value, 0).Err()
 	if err != nil {
+		log.WithError(err).Error("could not set key in provider")
 		return err
 	}
 
@@ -116,17 +155,22 @@ func (r *RedisFactProvider) SetIdentityFact(id string, key string, value string)
 }
 
 // DeleteIdentityFact implements FactProvider.
-func (r *RedisFactProvider) DeleteIdentityFact(id string, key string) error {
+func (r *RedisFactProvider) DeleteIdentityFact(ctx *gin.Context, id string, key string) error {
+	log := r.getLogEntry(ctx)
 	if id == "" {
+		log.Debug("called with no identity")
 		return errors.New("id is blank")
 	}
 
 	if key == "" {
+		log.Debug("called with no key")
 		return errors.New("key is blank")
 	}
 
-	err := r.client.Del(context.TODO(), r.getIdentityFactPath(id, key)).Err()
+	log.Debug("deleting identity fact")
+	err := r.client.Del(ctx, r.getIdentityFactPath(id, key)).Err()
 	if err != nil {
+		log.WithError(err).Error("could not delete key in provider")
 		return err
 	}
 
@@ -134,23 +178,37 @@ func (r *RedisFactProvider) DeleteIdentityFact(id string, key string) error {
 }
 
 // DeleteIdentity implements FactProvider.
-func (r *RedisFactProvider) DeleteIdentity(id string) error {
+func (r *RedisFactProvider) DeleteIdentity(ctx *gin.Context, id string) error {
+	log := r.getLogEntry(ctx)
 	if id == "" {
+		log.Debug("called with no identity")
 		return errors.New("id is blank")
 	}
-	
-	iter := r.client.Scan(context.TODO(), 0, fmt.Sprintf("%s:*", id), 0).Iterator()
 
-	for iter.Next(context.TODO()) {
-		key := iter.Val()
-		err := r.client.Del(context.TODO(), key).Err()
+	cursor := uint64(0)
+	for {
+		keys, nextCursor, err := r.client.Scan(ctx, cursor, fmt.Sprintf("%s:*", id), 100).Result()
 		if err != nil {
+			log.WithError(err).Error("could not fetch scan page from provider")
 			return err
 		}
-	}
+		log.WithField("keys", len(keys)).Debug("fetched page of keys")
 
-	if err := iter.Err(); err != nil {
-		return err
+		for _, key := range keys {
+			_, err := r.client.Del(ctx, key).Result()
+			if err != nil {
+				log.WithError(err).Error("could not delete key in provider")
+				return err
+			}
+		}
+
+		// Move the cursor to the next batch
+		cursor = nextCursor
+
+		// If cursor is 0, the iteration is complete
+		if cursor == 0 {
+			break
+		}
 	}
 
 	return nil

@@ -3,14 +3,16 @@ package main
 import (
 	"github.com/chenjiandongx/ginprom"
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-config-storage/internal/config"
-	"github.com/graytonio/flagops-config-storage/internal/routes"
+	"github.com/graytonio/flagops-data-storage/internal/config"
+	"github.com/graytonio/flagops-data-storage/internal/routes"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
 	r := gin.Default()
+
+	r.Use(routes.ErrorLogger())
 
 	ginPromOpts := ginprom.NewDefaultOpts()
 	ginPromOpts.EndpointLabelMappingFn = func(c *gin.Context) string {

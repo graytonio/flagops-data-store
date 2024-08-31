@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/graytonio/flagops-config-storage/internal/facts"
+	"github.com/gin-gonic/gin"
+	"github.com/graytonio/flagops-data-storage/internal/facts"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
@@ -60,7 +61,7 @@ func TestGetAllIdentities(t *testing.T) {
 
 	provider := facts.NewRedisFactProvider(client)
 
-	ids, err := provider.GetAllIdentities()
+	ids, err := provider.GetAllIdentities(&gin.Context{})
 	if assert.NoError(t, err) {
 		assert.ElementsMatch(t, []string{"customer0", "customer1", "customer2"}, ids)
 	}
@@ -119,7 +120,7 @@ func TestSetIdentityFact(t *testing.T) {
 
 			provider := facts.NewRedisFactProvider(client)
 
-			err = provider.SetIdentityFact(tt.id, tt.key, tt.value)
+			err = provider.SetIdentityFact(&gin.Context{}, tt.id, tt.key, tt.value)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -151,8 +152,8 @@ func TestGetIdentityFacts(t *testing.T) {
 				"fact1": "bar",
 			},
 			setupDB: func(client redis.UniversalClient) {
-				client.Set(context.TODO(), "customer0:fact0", "foo", 0)
-				client.Set(context.TODO(), "customer0:fact1", "bar", 0)
+				client.Set(context.Background(), "customer0:fact0", "foo", 0)
+				client.Set(context.Background(), "customer0:fact1", "bar", 0)
 			},
 		},
 		{
@@ -176,7 +177,7 @@ func TestGetIdentityFacts(t *testing.T) {
 
 			tt.setupDB(client)
 
-			facts, err := provider.GetIdentityFacts(tt.id)
+			facts, err := provider.GetIdentityFacts(&gin.Context{}, tt.id)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -203,7 +204,7 @@ func TestDeleteIdentityFact(t *testing.T) {
 			key:         "fact0",
 			expectError: false,
 			setupDB: func(client redis.UniversalClient) {
-				client.Set(context.TODO(), "customer0:fact0", "foo", 0)
+				client.Set(context.Background(), "customer0:fact0", "foo", 0)
 			},
 		},
 		{
@@ -243,7 +244,7 @@ func TestDeleteIdentityFact(t *testing.T) {
 
 			tt.setupDB(client)
 
-			err = provider.DeleteIdentityFact(tt.id, tt.key)
+			err = provider.DeleteIdentityFact(&gin.Context{}, tt.id, tt.key)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -266,7 +267,7 @@ func TestDeleteIdentity(t *testing.T) {
 			id:          "customer0",
 			expectError: false,
 			setupDB: func(client redis.UniversalClient) {
-				client.Set(context.TODO(), "customer0:fact0", "foo", 0)
+				client.Set(context.Background(), "customer0:fact0", "foo", 0)
 			},
 		},
 		{
@@ -297,7 +298,7 @@ func TestDeleteIdentity(t *testing.T) {
 
 			tt.setupDB(client)
 
-			err = provider.DeleteIdentity(tt.id)
+			err = provider.DeleteIdentity(&gin.Context{}, tt.id)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
