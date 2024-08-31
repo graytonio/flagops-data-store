@@ -1,9 +1,12 @@
 package main
 
 import (
+	"os"
+
 	"github.com/chenjiandongx/ginprom"
 	"github.com/gin-gonic/gin"
 	"github.com/graytonio/flagops-data-storage/internal/config"
+	"github.com/graytonio/flagops-data-storage/internal/db"
 	"github.com/graytonio/flagops-data-storage/internal/routes"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -28,10 +31,18 @@ func main() {
 	  logrus.WithError(err).Fatal("could not create providers")
 	}
 
+	dbClient, err := db.GetDBClient(os.Getenv("POSTGRES_DB_DSN"))
+	if err != nil {
+	  logrus.WithError(err).Fatal("could not create db client")
+	}
+
 	routes := routes.Routes{
 		FactProvider: factProvider,
 		SecretProvider: secretProvider,
+		DBClient: dbClient,
 	}
+
+	// TODO Add auth/permissions middleware
 
 	// Managing identities
 	r.GET("/identity", routes.GetAllIdentities) // Get all identities
@@ -48,6 +59,14 @@ func main() {
 	r.GET("/secret/:id/:secret", routes.GetIdentitySecret) // Get specific secret of identity
 	r.PUT("/secret/:id/:secret", routes.SetIdentitySecret) // Set secret for identity
 	r.DELETE("/secret/:id/:secret", routes.DeleteIdentitySecret) // Delete secret for identity
+
+	// Managing users and permissions
+	r.GET("/user", routes.RequiresPermission(db.ReadUsers), routes.GetUsers) // Fetch list of users
+	r.GET("/user/:id", routes.GetUserByID) // Fetch user details
+	r.GET("/permission", routes.GetPermisssions) // Fetch list of available permissions
+
+	r.PUT("/user/:id/permission", routes.AddUserPermissions) // Assign permission to user
+	r.DELETE("/user/:id/permission", routes.RemoveUserPermissions) // Remove permission from user
 
 	if err := r.Run(":8080"); err != nil {
 		logrus.WithError(err).Fatal("http server crashed")
