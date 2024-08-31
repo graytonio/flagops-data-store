@@ -75,3 +75,5 @@ func RemoveUserPermissions(dbClient *gorm.DB, userID uint, permissionIDs []strin
 
 	return nil
 }
+
+// TODO Rotate API Key function

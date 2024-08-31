@@ -42,8 +42,6 @@ func main() {
 		DBClient: dbClient,
 	}
 
-	// TODO Add auth/permissions middleware
-
 	// Managing identities
 	r.GET("/identity", routes.GetAllIdentities) // Get all identities
 	r.DELETE("/identity/:id", routes.DeleteIdentity) // Delete an identity
