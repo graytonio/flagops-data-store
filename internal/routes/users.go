@@ -113,3 +113,30 @@ func (r *Routes) GetPermisssions(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, permissions)
 }
+
+func (r *Routes) RotateUserAPIToken(ctx *gin.Context) {
+	rawUserID := ctx.Param("id")
+	if rawUserID == "" {
+		ctx.AbortWithError(http.StatusBadRequest, errors.New("id parameter must not be empty"))
+		return
+	}
+
+	userId, err := strconv.ParseUint(rawUserID, 10, 0)
+	if err != nil {
+		ctx.AbortWithError(http.StatusBadRequest, errors.New("invalid user id"))
+		return
+	}
+
+	newApiKey, err := auth.RotateUserAPIKey(r.DBClient, uint(userId))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, map[string]string{"apiKey": newApiKey})
+}

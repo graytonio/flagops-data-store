@@ -1,6 +1,9 @@
 package auth
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+
 	"github.com/google/uuid"
 	"github.com/graytonio/flagops-data-storage/internal/db"
 	"gorm.io/gorm"
@@ -29,8 +32,13 @@ func GetUserByID(dbClient *gorm.DB, id uint) (*db.User, error) {
 }
 
 func GetUserByAPIKey(dbClient *gorm.DB, apiKey string) (*db.User, error) {
+	hashedKey := sha256.New()
+	hashedKey.Write([]byte(apiKey))
+
+	hexHashedKey := hex.EncodeToString(hashedKey.Sum(nil))
+
 	var user db.User
-	err := dbClient.Preload(clause.Associations).Where(&db.User{APIKey: apiKey}).First(&user).Error // TODO Hash api key
+	err := dbClient.Preload(clause.Associations).Where(&db.User{APIKey: hexHashedKey}).First(&user).Error
 	if err != nil {
 	  return nil, err
 	}
@@ -95,14 +103,22 @@ func RemoveUserPermissions(dbClient *gorm.DB, userID uint, permissionIDs []strin
 
 func RotateUserAPIKey(dbClient *gorm.DB, userID uint) (string, error) {
 	newApiKey := uuid.NewString()
+	hashedKey := sha256.New()
+	hashedKey.Write([]byte(newApiKey))
+	hexHashedKey := hex.EncodeToString(hashedKey.Sum(nil))
 
-	err := dbClient.
+	res := dbClient.
 		Where("id", userID).
 		Updates(db.User{
-			APIKey: newApiKey, // TODO Hash API Key
-		}).Error
-	if err != nil {
-	  return "", err
+			APIKey: hexHashedKey,
+		})
+	if res.Error != nil {
+	  return "", res.Error
 	}
+
+	if res.RowsAffected == 0 {
+		return "", gorm.ErrRecordNotFound
+	}
+
 	return newApiKey, nil
 }

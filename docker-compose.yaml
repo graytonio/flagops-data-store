@@ -5,10 +5,10 @@ services:
       dockerfile: Dockerfile.dev
       target: final
     environment:
-      REDIS_URI: redis://redis/
-      POSTGRES_DB_DSN: postgresql://flagops:password@psql/flagops
-      FACT_PROVIDER: redis
-      SECRET_PROVIDER: asm
+      FLAGOPS_REDIS_URI: redis://redis/
+      FLAGOPS_POSTGRES_DB_DSN: postgresql://flagops:password@psql/flagops
+      FLAGOPS_FACT_PROVIDER: redis
+      FLAGOPS_SECRET_PROVIDER: asm
     env_file:
       - .env.local
     ports:

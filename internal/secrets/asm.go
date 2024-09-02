@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 var _ SecretProvider = &ASMSecretProvider{}
@@ -59,13 +60,18 @@ func (a *ASMSecretProvider) GetIdentitySecrets(ctx *gin.Context, id string) (Sec
 		SecretId: aws.String(a.getIdentitySecretKey(id)),
 	})
 	if err != nil {
-		var aerr *types.ResourceNotFoundException
-		if !errors.As(err, &aerr) { // If some other error other than not found fail
-			log.WithError(err).Error("could not fetch identity from provider")
-			return nil, err
+		var missingAerr *types.ResourceNotFoundException
+		if errors.As(err, &missingAerr) { // Secret does not exist
+			return nil, ErrIdentityNotFound
 		}
-		log.Error("identity not found in provider")
-		return nil, ErrIdentityNotFound
+
+		var deletedAerr *types.InvalidRequestException
+		if errors.As(err, &deletedAerr) {
+			return nil, ErrIdentityNotFound
+		}
+
+		log.WithError(err).Error("could not fetch identity from provider")
+		return nil, err
 	}
 
 	results := Secrets{}
@@ -87,8 +93,6 @@ func (a *ASMSecretProvider) SetIdentitySecret(ctx *gin.Context, id string, key s
 		if !errors.Is(err, ErrIdentityNotFound) {
 			return err
 		}
-
-		// TODO Handle case where secret is marked for deletion
 
 		_, err := a.client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
 			Name:         aws.String(a.getIdentitySecretKey(id)),
@@ -172,7 +176,7 @@ func (a *ASMSecretProvider) DeleteIdentity(ctx *gin.Context, id string) error {
 	log.Debug("deleting identity")
 	_, err := a.client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
 		SecretId:             aws.String(a.getIdentitySecretKey(id)),
-		RecoveryWindowInDays: aws.Int64(7), // TODO Make configurable
+		RecoveryWindowInDays: aws.Int64(viper.GetInt64("ASM_DELETION_RECOVERY")),
 	})
 	if err != nil {
 		var aerr *types.ResourceNotFoundException

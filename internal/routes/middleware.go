@@ -102,6 +102,41 @@ func (r *Routes) RequiresAuthentication(ctx *gin.Context) {
 	ctx.Next()
 }
 
+// A route that can only be called by the user themselves or an admin
+func (r *Routes) RequiresSelf(ctx *gin.Context) {
+	user, err := r.getAuthUser(ctx)
+	if err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	if user == nil {
+		ctx.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	// Allow admins
+	for _, p := range user.Permissions {
+		if p.ID == db.AdminPermission {
+			ctx.Next()
+			return
+		}
+	}
+
+	userId, err := strconv.ParseUint(ctx.Param("id"), 10, 0)
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	if user.ID != uint(userId) {
+		ctx.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	ctx.Next()
+}
+
 // Path protected by specific user permissions
 func (r *Routes) RequiresPermission(permissions ...string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {

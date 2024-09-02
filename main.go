@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/chenjiandongx/ginprom"
 	"github.com/gin-contrib/sessions"
 	gormsessions "github.com/gin-contrib/sessions/gorm"
@@ -12,6 +10,7 @@ import (
 	"github.com/graytonio/flagops-data-storage/internal/routes"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func main() {
@@ -32,12 +31,12 @@ func main() {
 	  logrus.WithError(err).Fatal("could not create providers")
 	}
 
-	dbClient, err := db.GetDBClient(os.Getenv("POSTGRES_DB_DSN"))
+	dbClient, err := db.GetDBClient(viper.GetString("POSTGRES_DB_DSN"))
 	if err != nil {
 	  logrus.WithError(err).Fatal("could not create db client")
 	}
 
-	sessionStore := gormsessions.NewStore(dbClient, true, []byte("secret-salt")) // TODO Generate on first launch or env
+	sessionStore := gormsessions.NewStore(dbClient, true, []byte(viper.GetString("user_session_salt")))
 	r.Use(sessions.Sessions("cookies", sessionStore))
 
 	routes := routes.Routes{
@@ -66,6 +65,7 @@ func main() {
 	r.GET("/user", routes.RequiresPermission(db.ReadUsers), routes.GetUsers) // Fetch list of users
 	r.GET("/user/:id", routes.RequiresPermission(db.ReadUsers), routes.GetUserByID) // Fetch user details
 	r.GET("/permission", routes.RequiresPermission(db.ReadUsers), routes.GetPermisssions) // Fetch list of available permissions
+	r.POST("/user/:id/rotate", routes.RequiresSelf, routes.RotateUserAPIToken) // Rotate user api token
 
 	r.PUT("/user/:id/permission", routes.RequiresPermission(db.WriteUsers), routes.AddUserPermissions) // Assign permission to user
 	r.DELETE("/user/:id/permission", routes.RequiresPermission(db.WriteUsers), routes.RemoveUserPermissions) // Remove permission from user

@@ -3,7 +3,6 @@ package config
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -15,14 +14,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-// TODO More robust config parsing
 func init() {
-	viper.BindEnv("fact_provider")
-	viper.BindEnv("secret_provider")
+	viper.SetDefault("fact_provider", "redis")
+	viper.SetDefault("secret_provider", "asm")
+	viper.SetDefault("user_session_salt", "flagops-salt")
+	viper.SetDefault("asm_deletion_recovery", 7)
 
-	viper.BindEnv("redis_uri")
 
-	// TODO Add env for oauth config
+	viper.SetEnvPrefix("FLAGOPS")
+	viper.AutomaticEnv()
 }
 
 func GetProviders() (facts.FactProvider, secrets.SecretProvider, error) {
@@ -57,7 +57,7 @@ func createSecretsProvider() (secrets.SecretProvider, error) {
 	switch viper.GetString("secret_provider") {
 	case "asm":
 		cfgOpts := []func(*config.LoadOptions) error{}
-		if os.Getenv("LOCAL_AWS_ENDPOINT") != "" {
+		if viper.GetString("LOCAL_AWS_ENDPOINT") != "" {
 			cfgOpts = append(cfgOpts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("accessKey", "secretKey", "token")))
 		}
 
@@ -67,8 +67,8 @@ func createSecretsProvider() (secrets.SecretProvider, error) {
 		}
 
 		return secrets.NewASMSecretProvider(secretsmanager.NewFromConfig(config, func(o *secretsmanager.Options) {
-			if os.Getenv("LOCAL_AWS_ENDPOINT") != "" {
-				o.BaseEndpoint = aws.String(os.Getenv("LOCAL_AWS_ENDPOINT"))
+			if viper.GetString("LOCAL_AWS_ENDPOINT") != "" {
+				o.BaseEndpoint = aws.String(viper.GetString("LOCAL_AWS_ENDPOINT"))
 			}
 		})), nil
 	}

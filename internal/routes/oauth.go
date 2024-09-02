@@ -2,7 +2,6 @@ package routes
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -11,16 +10,17 @@ import (
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/providers/github"
 	"github.com/oov/gothic"
+	"github.com/spf13/viper"
 )
 
 func init() {
 	goth.UseProviders(
-		github.New(os.Getenv("GITHUB_OAUTH_CLIENT_KEY"), os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"), os.Getenv("HOSTNAME")+"/auth/github/callback"),
+		github.New(viper.GetString("GITHUB_OAUTH_CLIENT_KEY"), viper.GetString("GITHUB_OAUTH_CLIENT_SECRET"), viper.GetString("HOSTNAME")+"/auth/github/callback"),
 	)
 }
 
 func (r *Routes) OauthLogin(ctx *gin.Context) {
-	err := gothic.BeginAuth(os.Getenv("OAUTH_PROVIDER"), ctx.Writer, ctx.Request)
+	err := gothic.BeginAuth(viper.GetString("OAUTH_PROVIDER"), ctx.Writer, ctx.Request)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -28,7 +28,7 @@ func (r *Routes) OauthLogin(ctx *gin.Context) {
 }
 
 func (r *Routes) OauthCallback(ctx *gin.Context) {
-	user, err := gothic.CompleteAuth(os.Getenv("OAUTH_PROVIDER"), ctx.Writer, ctx.Request)
+	user, err := gothic.CompleteAuth(viper.GetString("OAUTH_PROVIDER"), ctx.Writer, ctx.Request)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
