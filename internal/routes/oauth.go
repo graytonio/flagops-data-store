@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-data-storage/internal/auth"
 	"github.com/graytonio/flagops-data-storage/internal/db"
+	"github.com/graytonio/flagops-data-storage/internal/db/auth"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/providers/github"
 	"github.com/oov/gothic"
@@ -33,7 +34,7 @@ func (r *Routes) OauthCallback(ctx *gin.Context) {
 		return
 	}
 
-	_, err = auth.CreateOrUpdateUser(r.DBClient, db.User{
+	dbUser, err := auth.UpsertUser(r.DBClient, db.User{
 		Username: user.Name,
 		Email: user.Email,
 		SSOProvider: user.Provider,
@@ -44,7 +45,12 @@ func (r *Routes) OauthCallback(ctx *gin.Context) {
 		return
 	}
 
-	// TODO Store JWT in session
+	session := sessions.Default(ctx)
+	session.Set("user_id", dbUser.ID)
+	if err := session.Save(); err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 
 	ctx.Redirect(http.StatusTemporaryRedirect, "/")
 }

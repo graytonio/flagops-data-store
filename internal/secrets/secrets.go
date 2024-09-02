@@ -13,6 +13,8 @@ var (
 	ErrSecretNotFound = errors.New("secret not found")
 )
 
+// Mock sercrets provider
+
 type SecretProvider interface {
 	// Returns a list of all available identities in the provider
 	GetAllIdentities(ctx *gin.Context) ([]string, error)

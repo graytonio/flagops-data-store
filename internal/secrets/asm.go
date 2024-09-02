@@ -130,8 +130,8 @@ func (a *ASMSecretProvider) GetAllIdentities(ctx *gin.Context) ([]string, error)
 	token := ""
 
 	for {
-		res, err := a.client.ListSecrets(ctx, &secretsmanager.ListSecretsInput{
-			MaxResults: aws.Int32(150),
+		req := &secretsmanager.ListSecretsInput{
+			MaxResults: aws.Int32(50),
 			Filters: []types.Filter{
 				{
 					Key: "name",
@@ -140,8 +140,12 @@ func (a *ASMSecretProvider) GetAllIdentities(ctx *gin.Context) ([]string, error)
 					},
 				},
 			},
-			NextToken: aws.String(token),
-		})
+		}
+		if token != "" {
+			req.NextToken =  aws.String(token)
+		}
+
+		res, err := a.client.ListSecrets(ctx, req)
 		if err != nil {
 			log.WithError(err).Error("could not fetch page of results from provider")
 			return nil, err
@@ -171,6 +175,10 @@ func (a *ASMSecretProvider) DeleteIdentity(ctx *gin.Context, id string) error {
 		RecoveryWindowInDays: aws.Int64(7), // TODO Make configurable
 	})
 	if err != nil {
+		var aerr *types.ResourceNotFoundException
+		if errors.As(err, &aerr) { // Secrets don't exist for this user don't worry about it
+			return nil
+		}
 		log.WithError(err).Error("could not delete identity")
 		return err
 	}

@@ -13,6 +13,8 @@ var (
 	ErrSecretNotFound = errors.New("fact not found")
 )
 
+// TODO Mock facts provider
+
 type FactProvider interface {
 	// Returns a list of all available identities in the provider
 	GetAllIdentities(ctx *gin.Context) ([]string, error)

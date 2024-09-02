@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/google/uuid"
 	"github.com/graytonio/flagops-data-storage/internal/db"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -8,7 +9,7 @@ import (
 
 func GetUsers(dbClient *gorm.DB) ([]db.User, error) {
 	users := []db.User{}
-	
+
 	err := dbClient.Preload(clause.Associations).Find(&users).Error
 	if err != nil {
 	  return nil, err
@@ -27,8 +28,24 @@ func GetUserByID(dbClient *gorm.DB, id uint) (*db.User, error) {
 	return &user, nil
 }
 
-func CreateOrUpdateUser(dbClient *gorm.DB, userData db.User) (*db.User, error) {
-	err := dbClient.FirstOrCreate(&userData).Error
+func GetUserByAPIKey(dbClient *gorm.DB, apiKey string) (*db.User, error) {
+	var user db.User
+	err := dbClient.Preload(clause.Associations).Where(&db.User{APIKey: apiKey}).First(&user).Error // TODO Hash api key
+	if err != nil {
+	  return nil, err
+	}
+
+	return &user, err
+}
+
+func UpsertUser(dbClient *gorm.DB, userData db.User) (*db.User, error) {
+	err := dbClient.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"email",
+			"username",
+		}),
+	}).FirstOrCreate(&userData).Error
 	if err != nil {
 	  return nil, err
 	}
@@ -76,4 +93,16 @@ func RemoveUserPermissions(dbClient *gorm.DB, userID uint, permissionIDs []strin
 	return nil
 }
 
-// TODO Rotate API Key function
+func RotateUserAPIKey(dbClient *gorm.DB, userID uint) (string, error) {
+	newApiKey := uuid.NewString()
+
+	err := dbClient.
+		Where("id", userID).
+		Updates(db.User{
+			APIKey: newApiKey, // TODO Hash API Key
+		}).Error
+	if err != nil {
+	  return "", err
+	}
+	return newApiKey, nil
+}

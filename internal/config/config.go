@@ -15,11 +15,14 @@ import (
 	"github.com/spf13/viper"
 )
 
+// TODO More robust config parsing
 func init() {
 	viper.BindEnv("fact_provider")
 	viper.BindEnv("secret_provider")
 
 	viper.BindEnv("redis_uri")
+
+	// TODO Add env for oauth config
 }
 
 func GetProviders() (facts.FactProvider, secrets.SecretProvider, error) {

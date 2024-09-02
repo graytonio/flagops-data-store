@@ -5,11 +5,14 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-data-storage/internal/auth"
 	"github.com/graytonio/flagops-data-storage/internal/db"
+	"github.com/graytonio/flagops-data-storage/internal/db/auth"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 func ErrorLogger() gin.HandlerFunc {
@@ -23,15 +26,54 @@ func ErrorLogger() gin.HandlerFunc {
 }
 
 // Fetches user either from session info or from auth token
-func (r *Routes) getSessionUser(ctx *gin.Context) (*db.User, error) {
-	// TODO Attempt to fetch from session
-
-	rawUserID := ctx.Request.Header.Get("Authorization") // TODO Make real api token
-	if rawUserID == "" {
-		return nil, errors.New("id parameter must not be empty")
+func (r *Routes) getAuthUser(ctx *gin.Context) (*db.User, error) {
+	user, err := r.getSessionUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	userId, err := strconv.ParseUint(rawUserID, 10, 0)
+	if user != nil {
+		return user, nil
+	}
+
+	user, err = r.getAPIUser(ctx)
+	if err != nil {
+	  return nil, err
+	}
+
+	if user != nil {
+		return user, nil
+	}
+
+	return nil, nil
+}
+
+func (r *Routes) getAPIUser(ctx *gin.Context) (*db.User, error) {
+	apiKey := strings.TrimPrefix(ctx.Request.Header.Get("Authorization"), "Bearer ")
+	if apiKey == "" {
+		return nil, nil
+	}
+
+	user, err := auth.GetUserByAPIKey(r.DBClient, apiKey)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (r *Routes) getSessionUser(ctx *gin.Context) (*db.User, error) {
+	session := sessions.Default(ctx)
+	rawUserID := session.Get("user_id")
+	if rawUserID == nil {
+		return nil, nil
+	}
+
+	userId, err := strconv.ParseUint(rawUserID.(string), 10, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +88,13 @@ func (r *Routes) getSessionUser(ctx *gin.Context) (*db.User, error) {
 
 // Path protected to require a user session
 func (r *Routes) RequiresAuthentication(ctx *gin.Context) {
-	_, err := r.getSessionUser(ctx)
+	user, err := r.getAuthUser(ctx)
 	if err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	if user == nil {
 		ctx.AbortWithStatus(http.StatusForbidden)
 		return
 	}
@@ -58,8 +105,13 @@ func (r *Routes) RequiresAuthentication(ctx *gin.Context) {
 // Path protected by specific user permissions
 func (r *Routes) RequiresPermission(permissions ...string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		user, err := r.getSessionUser(ctx)
+		user, err := r.getAuthUser(ctx)
 		if err != nil {
+			ctx.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+	
+		if user == nil {
 			ctx.AbortWithStatus(http.StatusForbidden)
 			return
 		}
