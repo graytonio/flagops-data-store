@@ -2,6 +2,7 @@ package facts_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -189,7 +190,6 @@ func TestGetIdentityFacts(t *testing.T) {
 	}
 }
 
-// TODO Check keys were actually deleted
 func TestDeleteIdentityFact(t *testing.T) {
 	var tests = []struct {
 		name        string
@@ -249,12 +249,13 @@ func TestDeleteIdentityFact(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+				_, err := client.Get(context.Background(), fmt.Sprintf("%s:%s", tt.id, tt.key)).Result()
+				assert.ErrorIs(t, err, redis.Nil)
 			}
 		})
 	}
 }
 
-// TODO Check keys were actually deleted
 func TestDeleteIdentity(t *testing.T) {
 	var tests = []struct {
 		name        string
@@ -303,6 +304,8 @@ func TestDeleteIdentity(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+				keys, _, _ := client.Scan(context.Background(), 0, tt.id, 100).Result()
+				assert.Empty(t, keys)
 			}
 		})
 	}
