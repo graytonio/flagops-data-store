@@ -16,7 +16,7 @@ import (
 	"github.com/graytonio/flagops-data-storage/internal/secrets"
 	"github.com/graytonio/flagops-data-storage/internal/services/jwt"
 	"github.com/graytonio/flagops-data-storage/internal/services/user"
-	"github.com/graytonio/flagops-data-storage/templates"
+	"github.com/graytonio/flagops-data-storage/templates/pages"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
@@ -127,6 +127,7 @@ func main() {
 
 	uiRoutes := r.Group("/ui")
 	{
+		uiRoutes.GET("/", uiRoutesHandlers.HomeDashboard)
 		uiRoutes.GET("/fact/:id", uiRoutesHandlers.IdentityFactsDashboard)
 		uiRoutes.GET("/htmx/fact/:id", uiRoutesHandlers.IdentityFactsTable)
 	}
@@ -136,7 +137,7 @@ func main() {
 	r.GET("/auth/github/callback", routeHandlers.OauthCallback)
 
 	r.GET("/login", func(ctx *gin.Context) {
-		ctx.HTML(http.StatusOK, "", templates.LoginPage(conf.OAuthOptions.Provider))
+		ctx.HTML(http.StatusOK, "", pages.LoginPage(conf.OAuthOptions.Provider))
 	})
 
 	if err := r.Run(":8080"); err != nil {
