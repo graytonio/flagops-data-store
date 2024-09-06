@@ -1,77 +1,113 @@
 package config
 
 import (
-	"context"
-	"fmt"
+	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/graytonio/flagops-data-storage/internal/facts"
-	"github.com/graytonio/flagops-data-storage/internal/secrets"
-	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 )
 
-func init() {
-	viper.SetDefault("fact_provider", "redis")
-	viper.SetDefault("secret_provider", "asm")
-	viper.SetDefault("user_session_salt", "flagops-salt")
-	viper.SetDefault("asm_deletion_recovery", 7)
-
-
-	viper.SetEnvPrefix("FLAGOPS")
-	viper.AutomaticEnv()
+type Config struct {
+	FactsProviderOptions FactsProviderOptions `mapstructure:"facts"`
+	SecretsProviderOptions SecretsProviderOptions `mapstructure:"secrets"`
+	
+	UserDatabaseOptions UserDatabaseOptions `mapstructure:"user_db"`
+	OAuthOptions OAuthOptions `mapstructure:"oauth"`
 }
 
-func GetProviders() (facts.FactProvider, secrets.SecretProvider, error) {
-	factProvider, err := createFactProvider()
+type FactsProviderOptions struct {
+	Provider string `mapstructure:"provider"`
+	RedisURI string `mapstructure:"redis_uri"`
+}
+
+type SecretsProviderOptions struct {
+	Provider string `mapstructure:"provider"`
+	ASMDeletionRecoveryDays int `mapstructure:"asm_deletion_recovery_days"`
+}
+
+type UserDatabaseOptions struct {
+	PostgresDSN string `mapstructure:"dsn"`
+	JWTSecret string `mapstructure:"signing_secret"`
+	AccessTokenExpirationMinutes int `mapstructure:"access_token_expiration_minutes"`
+	RefreshTokenExpirationMinutes int `mapstructure:"refresh_token_expiration_minutes"`
+}
+
+type OAuthOptions struct {
+	Provider string `mapstructure:"oauth"`
+	Hostname string `mapstructure:"hostname"`
+
+	GithubClientKey string `mapstructure:"github_client_key"`
+	GithubClientSecret string `mapstructure:"github_client_secret"`
+}
+
+func ParseConfig() (*Config, error) {
+	v := viper.New()
+
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+
+	// Set default values here
+	conf := Config{
+		FactsProviderOptions: FactsProviderOptions{
+			Provider: "redis",
+		},
+		SecretsProviderOptions: SecretsProviderOptions{
+			Provider: "asm",
+			ASMDeletionRecoveryDays: 7,
+		},
+		UserDatabaseOptions: UserDatabaseOptions{
+			JWTSecret: "flagops-salt",
+			AccessTokenExpirationMinutes: 15,
+			RefreshTokenExpirationMinutes: 720,
+		},
+	}
+
+	err := v.Unmarshal(&conf)
 	if err != nil {
-	  return nil, nil, err
+	  return nil, err
 	}
 
-	secretProvider, err := createSecretsProvider()
-	if err != nil {
-	  return nil, nil, err
-	}
-
-	return factProvider, secretProvider, nil
+	return &conf, nil
 }
 
-func createFactProvider() (facts.FactProvider, error) {
-	switch viper.GetString("fact_provider") {
-	case "redis":
-		opts, err := redis.ParseURL(viper.GetString("redis_uri"))
-		if err != nil {
-		  return nil, err
-		}
+// func GetProviders(conf Config) (facts.FactProvider, secrets.SecretProvider, error) {
+// 	factProvider, err := createFactProvider(conf.FactsProviderOptions)
+// 	if err != nil {
+// 	  return nil, nil, err
+// 	}
 
-		return facts.NewRedisFactProvider(redis.NewClient(opts)), nil
-	}
+// 	secretProvider, err := createSecretsProvider(conf.SecretsProviderOptions)
+// 	if err != nil {
+// 	  return nil, nil, err
+// 	}
 
-	return nil, fmt.Errorf("no such fact provider %s", viper.GetString("fact_provider"))
-}
+// 	return factProvider, secretProvider, nil
+// }
 
-func createSecretsProvider() (secrets.SecretProvider, error) {
-	switch viper.GetString("secret_provider") {
-	case "asm":
-		cfgOpts := []func(*config.LoadOptions) error{}
-		if viper.GetString("LOCAL_AWS_ENDPOINT") != "" {
-			cfgOpts = append(cfgOpts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("accessKey", "secretKey", "token")))
-		}
+// func createFactProvider(conf FactsProviderOptions) (facts.FactProvider, error) {
+// 	switch conf.Provider {
+// 	case "redis":
+// 		opts, err := redis.ParseURL(conf.RedisURI)
+// 		if err != nil {
+// 		  return nil, err
+// 		}
 
-		config, err := config.LoadDefaultConfig(context.Background(), cfgOpts...)
-		if err != nil {
-		  return nil, err
-		}
+// 		return facts.NewRedisFactProvider(redis.NewClient(opts)), nil
+// 	default:
+// 		return nil, fmt.Errorf("no such fact provider %s", conf.Provider)
+// 	}
+// }
 
-		return secrets.NewASMSecretProvider(secretsmanager.NewFromConfig(config, func(o *secretsmanager.Options) {
-			if viper.GetString("LOCAL_AWS_ENDPOINT") != "" {
-				o.BaseEndpoint = aws.String(viper.GetString("LOCAL_AWS_ENDPOINT"))
-			}
-		})), nil
-	}
+// func createSecretsProvider(conf SecretsProviderOptions) (secrets.SecretProvider, error) {
+// 	switch conf.Provider {
+// 	case "asm":
+// 		cfgOpts := []func(*config.LoadOptions) error{}
+// 		config, err := config.LoadDefaultConfig(context.Background(), cfgOpts...)
+// 		if err != nil {
+// 		  return nil, err
+// 		}
 
-	return nil, fmt.Errorf("no such secret provider %s", viper.GetString("secret_provider"))
-}
+// 		return secrets.NewASMSecretProvider(secretsmanager.NewFromConfig(config)), nil
+// 	default:
+// 		return nil, fmt.Errorf("no such secret provider %s", conf.Provider)
+// 	}
+// }

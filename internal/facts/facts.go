@@ -2,8 +2,11 @@ package facts
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/graytonio/flagops-data-storage/internal/config"
+	"github.com/redis/go-redis/v9"
 )
 
 type Facts map[string]string
@@ -28,6 +31,20 @@ type FactProvider interface {
 
 	// Deletes the key for the given identity
 	DeleteIdentityFact(ctx *gin.Context, id string, key string) error
+}
+
+func GetFactProvider(config config.FactsProviderOptions) (FactProvider, error) {
+	switch config.Provider {
+	case "redis":
+		opts, err := redis.ParseURL(config.RedisURI)
+		if err != nil {
+		  return nil, err
+		}
+
+		return NewRedisFactProvider(redis.NewClient(opts)), nil
+	default:
+		return nil, fmt.Errorf("no such fact provider %s", config.Provider)
+	}
 }
 
 var _ FactProvider = &MockFactsProvider{}

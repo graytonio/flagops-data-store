@@ -1,9 +1,14 @@
 package secrets
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
+	awsconf "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/gin-gonic/gin"
+	"github.com/graytonio/flagops-data-storage/internal/config"
 )
 
 type Secrets map[string]string
@@ -28,6 +33,20 @@ type SecretProvider interface {
 
 	// Deletes the key for the given identity
 	DeleteIdentitySecret(ctx *gin.Context, id string, key string) error
+}
+
+func GetSecretsProvider(conf config.SecretsProviderOptions) (SecretProvider, error) {
+	switch conf.Provider {
+	case "asm":
+		config, err := awsconf.LoadDefaultConfig(context.Background())
+		if err != nil {
+			return nil, err
+		}
+
+		return NewASMSecretProvider(secretsmanager.NewFromConfig(config), conf), nil
+	default:
+		return nil, fmt.Errorf("no such secret provider %s", conf.Provider)
+	}
 }
 
 var _ SecretProvider = &MockSecretsProvider{}

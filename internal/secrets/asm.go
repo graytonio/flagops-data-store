@@ -11,8 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gin-gonic/gin"
+	"github.com/graytonio/flagops-data-storage/internal/config"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 var _ SecretProvider = &ASMSecretProvider{}
@@ -21,11 +21,14 @@ const secretPrefix = "flagops-secret-"
 
 // A secrets provider based on AWS Secrets Manager
 type ASMSecretProvider struct {
+	config config.SecretsProviderOptions
+
 	client *secretsmanager.Client
 }
 
-func NewASMSecretProvider(client *secretsmanager.Client) *ASMSecretProvider {
+func NewASMSecretProvider(client *secretsmanager.Client, config config.SecretsProviderOptions) *ASMSecretProvider {
 	return &ASMSecretProvider{
+		config: config,
 		client: client,
 	}
 }
@@ -176,7 +179,7 @@ func (a *ASMSecretProvider) DeleteIdentity(ctx *gin.Context, id string) error {
 	log.Debug("deleting identity")
 	_, err := a.client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
 		SecretId:             aws.String(a.getIdentitySecretKey(id)),
-		RecoveryWindowInDays: aws.Int64(viper.GetInt64("ASM_DELETION_RECOVERY")),
+		RecoveryWindowInDays: aws.Int64(int64(a.config.ASMDeletionRecoveryDays)),
 	})
 	if err != nil {
 		var aerr *types.ResourceNotFoundException

@@ -6,13 +6,12 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-data-storage/internal/db/auth"
 	"gorm.io/gorm"
 )
 
 
 func (r *Routes) GetUsers(ctx *gin.Context) {
-	users, err := auth.GetUsers(r.DBClient)
+	users, err := r.UserDataService.GetUsers()
 	if err != nil {
 	  ctx.AbortWithError(http.StatusInternalServerError, err)
 	  return
@@ -34,7 +33,7 @@ func (r *Routes) GetUserByID(ctx *gin.Context) {
 		return
 	}
 
-	user, err := auth.GetUserByID(r.DBClient, uint(userId))
+	user, err := r.UserDataService.GetUserByID(uint(userId))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.AbortWithStatus(http.StatusNotFound)
@@ -71,7 +70,7 @@ func (r *Routes) AddUserPermissions(ctx *gin.Context) {
 		return
 	}
 
-	err = auth.AddUserPermissions(r.DBClient, uint(userId), body.Permissions)
+	err = r.UserDataService.AddUserPermissions(uint(userId), body.Permissions)
 	if err != nil {
 	  ctx.AbortWithError(http.StatusInternalServerError, err)
 	  return
@@ -97,7 +96,7 @@ func (r *Routes) RemoveUserPermissions(ctx *gin.Context) {
 		return
 	}
 
-	err = auth.RemoveUserPermissions(r.DBClient, uint(userId), body.Permissions)
+	err = r.UserDataService.RemoveUserPermissions(uint(userId), body.Permissions)
 	if err != nil {
 	  ctx.AbortWithError(http.StatusInternalServerError, err)
 	  return
@@ -105,38 +104,11 @@ func (r *Routes) RemoveUserPermissions(ctx *gin.Context) {
 }
 
 func (r *Routes) GetPermisssions(ctx *gin.Context) {
-	permissions, err := auth.GetPermissions(r.DBClient)
+	permissions, err := r.UserDataService.GetPermissions()
 	if err != nil {
 	  ctx.AbortWithError(http.StatusInternalServerError, err)
 	  return
 	}
 
 	ctx.JSON(http.StatusOK, permissions)
-}
-
-func (r *Routes) RotateUserAPIToken(ctx *gin.Context) {
-	rawUserID := ctx.Param("id")
-	if rawUserID == "" {
-		ctx.AbortWithError(http.StatusBadRequest, errors.New("id parameter must not be empty"))
-		return
-	}
-
-	userId, err := strconv.ParseUint(rawUserID, 10, 0)
-	if err != nil {
-		ctx.AbortWithError(http.StatusBadRequest, errors.New("invalid user id"))
-		return
-	}
-
-	newApiKey, err := auth.RotateUserAPIKey(r.DBClient, uint(userId))
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			ctx.AbortWithStatus(http.StatusNotFound)
-			return
-		}
-
-		ctx.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, map[string]string{"apiKey": newApiKey})
 }

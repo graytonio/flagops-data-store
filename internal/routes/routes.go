@@ -5,17 +5,23 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/graytonio/flagops-data-storage/internal/config"
 	"github.com/graytonio/flagops-data-storage/internal/facts"
 	"github.com/graytonio/flagops-data-storage/internal/secrets"
-	"gorm.io/gorm"
+	"github.com/graytonio/flagops-data-storage/internal/services/jwt"
+	"github.com/graytonio/flagops-data-storage/internal/services/user"
 )
 
 // TODO Test routes
 
 type Routes struct {
+	Config config.Config
+
 	FactProvider facts.FactProvider
 	SecretProvider secrets.SecretProvider
-	DBClient *gorm.DB
+
+	UserDataService *user.UserDataService
+	JWTService *jwt.JWTService
 }
 
 type identieiesSupportedProviders struct{

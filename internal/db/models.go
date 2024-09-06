@@ -13,7 +13,6 @@ type User struct {
 
 	SSOProvider string
 	SSOID       string
-	APIKey      string `gorm:"index;type:bytea"`
 
 	Permissions []Permission `gorm:"many2many:user_permissions"`
 }

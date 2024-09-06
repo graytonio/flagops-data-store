@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/config"
+	awscfg "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/docker/go-connections/nat"
 	"github.com/gin-gonic/gin"
+	"github.com/graytonio/flagops-data-storage/internal/config"
 	"github.com/graytonio/flagops-data-storage/internal/secrets"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
@@ -25,26 +26,26 @@ func getLocalStackContainer(ctx context.Context, region string) (testcontainers.
 	}
 
 	provider, err := testcontainers.NewDockerProvider()
-    if err != nil {
-        return nil, nil, err
-    }
-    defer provider.Close()
+	if err != nil {
+		return nil, nil, err
+	}
+	defer provider.Close()
 
-    host, err := provider.DaemonHost(ctx)
-    if err != nil {
-        return nil, nil, err
-    }
+	host, err := provider.DaemonHost(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	mappedPort, err := stackC.MappedPort(ctx, nat.Port("4566/tcp"))
-    if err != nil {
-        return nil, nil, err
-    }
+	if err != nil {
+		return nil, nil, err
+	}
 
 	endpoint := fmt.Sprintf("http://%s:%d", host, mappedPort.Int())
 
-	awsCfg, err := config.LoadDefaultConfig(context.Background(),
-		config.WithRegion(region),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("accessKey", "secretKey", "token")),
+	awsCfg, err := awscfg.LoadDefaultConfig(context.Background(),
+		awscfg.WithRegion(region),
+		awscfg.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("accessKey", "secretKey", "token")),
 	)
 	if err != nil {
 		return nil, nil, err
@@ -76,7 +77,7 @@ func TestGetIdentitySecrets(t *testing.T) {
 		SecretString: aws.String(`{"foo": "bar", "boo": "baz"}`),
 	})
 
-	provider := secrets.NewASMSecretProvider(client)
+	provider := secrets.NewASMSecretProvider(client, config.SecretsProviderOptions{})
 
 	secretsOutput, err := provider.GetIdentitySecrets(&gin.Context{}, "test-identity")
 	if assert.NoError(t, err) {
@@ -92,7 +93,7 @@ func TestSetIdentitySecretNoExistingSecret(t *testing.T) {
 	}
 	defer closeLocalStackContainer(t, ctx, container)
 
-	provider := secrets.NewASMSecretProvider(client)
+	provider := secrets.NewASMSecretProvider(client, config.SecretsProviderOptions{})
 
 	err = provider.SetIdentitySecret(&gin.Context{}, "test-identity", "foo", "bar")
 	if assert.NoError(t, err) {
@@ -117,7 +118,7 @@ func TestSetIdentitySecretExistingSecret(t *testing.T) {
 		SecretString: aws.String(`{"foo":"baz"}`),
 	})
 
-	provider := secrets.NewASMSecretProvider(client)
+	provider := secrets.NewASMSecretProvider(client, config.SecretsProviderOptions{})
 
 	err = provider.SetIdentitySecret(&gin.Context{}, "test-identity", "foo", "bar")
 	if assert.NoError(t, err) {
@@ -152,7 +153,7 @@ func TestGetAllIdenties(t *testing.T) {
 		SecretString: aws.String(`{"foo":"baz"}`),
 	})
 
-	provider := secrets.NewASMSecretProvider(client)
+	provider := secrets.NewASMSecretProvider(client, config.SecretsProviderOptions{})
 
 	ids, err := provider.GetAllIdentities(&gin.Context{})
 	if assert.NoError(t, err) {
@@ -173,7 +174,7 @@ func TestDeleteIdentitySecret(t *testing.T) {
 		SecretString: aws.String(`{"foo":"baz","boo":"bar"}`),
 	})
 
-	provider := secrets.NewASMSecretProvider(client)
+	provider := secrets.NewASMSecretProvider(client, config.SecretsProviderOptions{})
 
 	err = provider.DeleteIdentitySecret(&gin.Context{}, "test-identity", "boo")
 	if assert.NoError(t, err) {
@@ -198,14 +199,16 @@ func TestDeleteIdentity(t *testing.T) {
 		SecretString: aws.String(`{"foo":"baz","boo":"bar"}`),
 	})
 
-	provider := secrets.NewASMSecretProvider(client)
+	provider := secrets.NewASMSecretProvider(client, config.SecretsProviderOptions{
+		ASMDeletionRecoveryDays: 7,
+	})
 
 	err = provider.DeleteIdentity(&gin.Context{}, "test-identity")
 	if assert.NoError(t, err) {
 		_, err := client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
 			SecretId: aws.String(fmt.Sprintf("flagops-secret-%s", "test-identity")),
 		})
-		
+
 		var aerr *types.InvalidRequestException
 		assert.ErrorAs(t, err, &aerr)
 	}

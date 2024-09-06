@@ -6,8 +6,6 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// TODO Test db operations
-
 // Creates a new db client and runs auto migration on it
 func GetDBClient(dsn string) (*gorm.DB, error) {
 	dbClient, err :=  gorm.Open(postgres.Open(dsn))
