@@ -1,4 +1,4 @@
-package routes
+package api
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 )
 
 
-func (r *Routes) GetIdentityFacts(ctx *gin.Context) {
+func (r *APIRoutes) GetIdentityFacts(ctx *gin.Context) {
 	identity := ctx.Param("id")
 	if identity == "" {
 		ctx.AbortWithError(http.StatusBadRequest, errors.New("id parameter must not be empty"))
@@ -29,7 +29,7 @@ func (r *Routes) GetIdentityFacts(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, identityFacts)
 }
 
-func (r *Routes) GetIdentityFact(ctx *gin.Context) {
+func (r *APIRoutes) GetIdentityFact(ctx *gin.Context) {
 	identity := ctx.Param("id")
 	if identity == "" {
 		ctx.AbortWithError(http.StatusBadRequest, errors.New("id parameter must not be empty"))
@@ -63,7 +63,7 @@ type setIdentityFactRequest struct {
 	Value string `json:"value"`
 }
 
-func (r *Routes) SetIdentityFact(ctx *gin.Context) {
+func (r *APIRoutes) SetIdentityFact(ctx *gin.Context) {
 	identity := ctx.Param("id")
 	if identity == "" {
 		ctx.AbortWithError(http.StatusBadRequest, errors.New("id parameter must not be empty"))
@@ -89,7 +89,7 @@ func (r *Routes) SetIdentityFact(ctx *gin.Context) {
 	}
 }
 
-func (r *Routes) DeleteIdentityFact(ctx *gin.Context) {
+func (r *APIRoutes) DeleteIdentityFact(ctx *gin.Context) {
 	identity := ctx.Param("id")
 	if identity == "" {
 		ctx.AbortWithError(http.StatusBadRequest, errors.New("id parameter must not be empty"))

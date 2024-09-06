@@ -26,7 +26,7 @@ func NavBar() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<nav class=\"bg-gray-800\"><div class=\"mx-auto max-w-7xl px-4 sm:px-6 lg:px-8\"><div class=\"flex h-16 items-center justify-between\"><div class=\"flex items-center\"><div class=\"flex-shrink-0\"><img class=\"h-8 w-8\" src=\"https://tailwindui.com/img/logos/mark.svg?color=indigo&amp;shade=500\" alt=\"Your Company\"></div><div class=\"hidden md:block\"><div class=\"ml-10 flex items-baseline space-x-4\"><a href=\"#\" class=\"rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white\" aria-current=\"page\">Dashboard</a> <a href=\"#\" class=\"rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white\">Identities</a> <a href=\"#\" class=\"rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white\">Facts</a> <a href=\"#\" class=\"rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white\">Secrets</a></div></div></div></div></div></nav>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<nav class=\"bg-gray-800\"><div class=\"px-4 mx-auto max-w-7xl sm:px-6 lg:px-8\"><div class=\"flex items-center justify-between h-16\"><div class=\"flex items-center\"><div class=\"flex-shrink-0\"><img class=\"w-8 h-8\" src=\"https://tailwindui.com/img/logos/mark.svg?color=indigo&amp;shade=500\" alt=\"Your Company\"></div><div class=\"hidden md:block\"><div class=\"flex items-baseline ml-10 space-x-4\"><a href=\"#\" class=\"px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-md\" aria-current=\"page\">Dashboard</a> <a href=\"#\" class=\"px-3 py-2 text-sm font-medium text-gray-300 rounded-md hover:bg-gray-700 hover:text-white\">Identities</a> <a href=\"#\" class=\"px-3 py-2 text-sm font-medium text-gray-300 rounded-md hover:bg-gray-700 hover:text-white\">Facts</a> <a href=\"#\" class=\"px-3 py-2 text-sm font-medium text-gray-300 rounded-md hover:bg-gray-700 hover:text-white\">Secrets</a></div></div></div></div></div></nav>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -34,7 +34,7 @@ func NavBar() templ.Component {
 	})
 }
 
-func Home() templ.Component {
+func Dashboard(content templ.Component) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -60,7 +60,15 @@ func Home() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<header class=\"bg-white shadow-sm\"><div class=\"mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8\"><h1 class=\"text-lg font-semibold leading-6 text-gray-900\">Dashboard</h1></div></header><main><div class=\"mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8\"><!-- Your content --></div></main></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<header class=\"bg-white shadow-sm\"><div class=\"px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8\"><h1 class=\"text-lg font-semibold leading-6 text-gray-900\">Dashboard</h1></div></header><main><div class=\"px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = content.Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div></main></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

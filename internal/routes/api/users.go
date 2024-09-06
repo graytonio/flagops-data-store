@@ -1,4 +1,4 @@
-package routes
+package api
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 )
 
 
-func (r *Routes) GetUsers(ctx *gin.Context) {
+func (r *APIRoutes) GetUsers(ctx *gin.Context) {
 	users, err := r.UserDataService.GetUsers()
 	if err != nil {
 	  ctx.AbortWithError(http.StatusInternalServerError, err)
@@ -20,7 +20,7 @@ func (r *Routes) GetUsers(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, users)
 }
 
-func (r *Routes) GetUserByID(ctx *gin.Context) {
+func (r *APIRoutes) GetUserByID(ctx *gin.Context) {
 	rawUserID := ctx.Param("id")
 	if rawUserID == "" {
 		ctx.AbortWithError(http.StatusBadRequest, errors.New("id parameter must not be empty"))
@@ -51,7 +51,7 @@ type modifyPermissionRequest struct {
 	Permissions []string `json:"permissions"`
 }
 
-func (r *Routes) AddUserPermissions(ctx *gin.Context) {
+func (r *APIRoutes) AddUserPermissions(ctx *gin.Context) {
 	rawUserID := ctx.Param("id")
 	if rawUserID == "" {
 		ctx.AbortWithError(http.StatusBadRequest, errors.New("id parameter must not be empty"))
@@ -77,7 +77,7 @@ func (r *Routes) AddUserPermissions(ctx *gin.Context) {
 	}
 }
 
-func (r *Routes) RemoveUserPermissions(ctx *gin.Context) {
+func (r *APIRoutes) RemoveUserPermissions(ctx *gin.Context) {
 	rawUserID := ctx.Param("id")
 	if rawUserID == "" {
 		ctx.AbortWithError(http.StatusBadRequest, errors.New("id parameter must not be empty"))
@@ -103,7 +103,7 @@ func (r *Routes) RemoveUserPermissions(ctx *gin.Context) {
 	}
 }
 
-func (r *Routes) GetPermisssions(ctx *gin.Context) {
+func (r *APIRoutes) GetPermisssions(ctx *gin.Context) {
 	permissions, err := r.UserDataService.GetPermissions()
 	if err != nil {
 	  ctx.AbortWithError(http.StatusInternalServerError, err)

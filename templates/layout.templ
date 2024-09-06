@@ -5,7 +5,10 @@ templ Layout(content templ.Component) {
         <head>
             <meta charset="UTF-8"/>
             <script src="https://unpkg.com/htmx.org@2.0.2" integrity="sha384-Y7hw+L/jvKeWIRRkqWYfPcvVxHzVzn5REgzbawhxAuQGwX1XWe70vji+VSeHOThJ" crossorigin="anonymous"></script>
-            <link rel="stylesheet" href="assets/styles.css"/>
+            <meta name="htmx-config"
+                content='{"responseHandling": [{"code":".*", "swap": true}]}'
+            />
+            <link rel="stylesheet" href="/assets/styles.css"/>
         </head>
         <body class="h-full">
             @content

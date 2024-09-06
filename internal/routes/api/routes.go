@@ -1,4 +1,4 @@
-package routes
+package api
 
 import (
 	"github.com/graytonio/flagops-data-storage/internal/config"
@@ -10,7 +10,7 @@ import (
 
 // TODO Test routes
 
-type Routes struct {
+type APIRoutes struct {
 	Config config.Config
 
 	FactProvider facts.FactProvider
