@@ -1,0 +1,17 @@
+version: '3'
+tasks:
+  init:
+    cmds:
+      - npm install
+      - go install github.com/a-h/templ/cmd/templ@latest
+      - go mod tidy
+  assets:
+    cmds:
+      - templ generate
+      - npx tailwindcss -i ./assets/tailwind.css -o ./assets/dist/styles.css
+  run:
+    cmds:
+      - docker compose up --build
+  test:
+    cmds:
+      - go test ./...

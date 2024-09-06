@@ -3,6 +3,8 @@ version: 2
 before:
   hooks:
     - go mod tidy
+    - templ generate
+    - npx tailwindcss -i ./assets/tailwind.css -o ./assets/dist/styles.css
 
 builds:
   - env:
@@ -10,6 +12,8 @@ builds:
     goos:
       - linux
       - darwin
+    tags:
+      - viper_bind_struct
 
 archives:
   - format: tar.gz
@@ -25,6 +29,8 @@ dockers:
   - image_templates:
       - ghcr.io/graytonio/flagops-data-store:{{.Version}}
       - ghcr.io/graytonio/flagops-data-store:latest
+    extra_files:
+      - assets/dist
 
 changelog:
   sort: asc

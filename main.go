@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/chenjiandongx/ginprom"
@@ -8,10 +9,12 @@ import (
 	"github.com/graytonio/flagops-data-storage/internal/config"
 	"github.com/graytonio/flagops-data-storage/internal/db"
 	"github.com/graytonio/flagops-data-storage/internal/facts"
+	"github.com/graytonio/flagops-data-storage/internal/renderer"
 	"github.com/graytonio/flagops-data-storage/internal/routes"
 	"github.com/graytonio/flagops-data-storage/internal/secrets"
 	"github.com/graytonio/flagops-data-storage/internal/services/jwt"
 	"github.com/graytonio/flagops-data-storage/internal/services/user"
+	"github.com/graytonio/flagops-data-storage/templates"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
@@ -61,6 +64,9 @@ func main() {
 
 	r := gin.Default()
 
+	r.HTMLRender = &renderer.HTMLTemplRenderer{}
+	r.Static("/assets", "/assets")
+
 	r.Use(routes.ErrorLogger())
 	
 	ginPromOpts := ginprom.NewDefaultOpts()
@@ -97,6 +103,14 @@ func main() {
 	// Authentication
 	r.GET("/auth/login", routeHandlers.OauthLogin)
 	r.GET("/auth/github/callback", routeHandlers.OauthCallback)
+
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.HTML(http.StatusOK, "", templates.Home())
+	})
+
+	r.GET("/login", func(ctx *gin.Context) {
+		ctx.HTML(http.StatusOK, "", templates.LoginPage(conf.OAuthOptions.Provider))
+	})
 
 	if err := r.Run(":8080"); err != nil {
 		logrus.WithError(err).Fatal("http server crashed")

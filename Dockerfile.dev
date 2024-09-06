@@ -8,7 +8,10 @@ RUN go mod download -x
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o /bin/server .
+RUN go install github.com/a-h/templ/cmd/templ@latest
+RUN templ generate
+
+RUN CGO_ENABLED=0 go build -tags viper_bind_struct -o /bin/server .
 
 FROM alpine:latest AS final
 
@@ -31,7 +34,7 @@ RUN adduser \
 USER appuser
 
 COPY --from=build /bin/server /bin/
-COPY templates/ /templates/
+COPY assets/dist/ /assets/
 
 EXPOSE 8080
 

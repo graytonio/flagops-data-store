@@ -3,6 +3,7 @@ package config
 import (
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -32,7 +33,7 @@ type UserDatabaseOptions struct {
 }
 
 type OAuthOptions struct {
-	Provider string `mapstructure:"oauth"`
+	Provider string `mapstructure:"provider"`
 	Hostname string `mapstructure:"hostname"`
 
 	GithubClientKey string `mapstructure:"github_client_key"`
@@ -65,6 +66,8 @@ func ParseConfig() (*Config, error) {
 	if err != nil {
 	  return nil, err
 	}
+
+	logrus.Infof("%+v", conf)
 
 	return &conf, nil
 }
