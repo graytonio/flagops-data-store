@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/graytonio/flagops-data-storage/internal/services/user"
+	"github.com/graytonio/flagops-data-store/internal/services/user"
 )
 
 // Handles the parsing and validation of JWT authentication tokens

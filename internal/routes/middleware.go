@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-data-storage/internal/db"
+	"github.com/graytonio/flagops-data-store/internal/db"
 	"github.com/sirupsen/logrus"
 )
 
