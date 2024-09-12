@@ -8,7 +8,7 @@ import (
 	awsconf "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-data-storage/internal/config"
+	"github.com/graytonio/flagops-data-store/internal/config"
 )
 
 type Secrets map[string]string

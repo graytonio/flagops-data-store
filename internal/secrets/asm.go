@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-data-storage/internal/config"
+	"github.com/graytonio/flagops-data-store/internal/config"
 	"github.com/sirupsen/logrus"
 )
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-data-storage/internal/config"
+	"github.com/graytonio/flagops-data-store/internal/config"
 	"github.com/redis/go-redis/v9"
 )
 

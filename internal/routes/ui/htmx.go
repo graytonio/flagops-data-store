@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-data-storage/internal/facts"
-	"github.com/graytonio/flagops-data-storage/internal/utils"
-	"github.com/graytonio/flagops-data-storage/templates/components"
-	"github.com/graytonio/flagops-data-storage/templates/pages"
+	"github.com/graytonio/flagops-data-store/internal/facts"
+	"github.com/graytonio/flagops-data-store/internal/utils"
+	"github.com/graytonio/flagops-data-store/templates/components"
+	"github.com/graytonio/flagops-data-store/templates/pages"
 )
 
 func SendHTMXError(ctx *gin.Context, code int, message string) {

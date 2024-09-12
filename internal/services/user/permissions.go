@@ -1,7 +1,7 @@
 package user
 
 import (
-	"github.com/graytonio/flagops-data-storage/internal/db"
+	"github.com/graytonio/flagops-data-store/internal/db"
 )
 
 // TODO Add pagination

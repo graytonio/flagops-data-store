@@ -1,11 +1,11 @@
 package api
 
 import (
-	"github.com/graytonio/flagops-data-storage/internal/config"
-	"github.com/graytonio/flagops-data-storage/internal/facts"
-	"github.com/graytonio/flagops-data-storage/internal/secrets"
-	"github.com/graytonio/flagops-data-storage/internal/services/jwt"
-	"github.com/graytonio/flagops-data-storage/internal/services/user"
+	"github.com/graytonio/flagops-data-store/internal/config"
+	"github.com/graytonio/flagops-data-store/internal/facts"
+	"github.com/graytonio/flagops-data-store/internal/secrets"
+	"github.com/graytonio/flagops-data-store/internal/services/jwt"
+	"github.com/graytonio/flagops-data-store/internal/services/user"
 )
 
 // TODO Test routes

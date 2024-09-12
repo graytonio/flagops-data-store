@@ -1,4 +1,4 @@
-module github.com/graytonio/flagops-data-storage
+module github.com/graytonio/flagops-data-store
 
 go 1.23.0
 

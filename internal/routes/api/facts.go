@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-data-storage/internal/facts"
+	"github.com/graytonio/flagops-data-store/internal/facts"
 )
 
 

@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/graytonio/flagops-data-storage/internal/db"
-	"github.com/graytonio/flagops-data-storage/internal/services/jwt"
+	"github.com/graytonio/flagops-data-store/internal/db"
+	"github.com/graytonio/flagops-data-store/internal/services/jwt"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/providers/github"
 	"github.com/oov/gothic"
