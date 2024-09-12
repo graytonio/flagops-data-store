@@ -99,16 +99,20 @@ func main() {
 	r.Use(ginprom.PromMiddleware(ginPromOpts))
 	r.GET("/metrics", ginprom.PromHandler(promhttp.Handler()))
 
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.Redirect(http.StatusPermanentRedirect, "/ui")
+	})
+
 	apiRoutes := r.Group("/api")
 	{
 		// Managing identities
-		apiRoutes.GET("/identity", /*routeHandlers.RequiresAuth(db.FactsRead, db.SecretsRead),*/ apiRoutesHandlers.GetAllIdentities)      // Get all identities
+		apiRoutes.GET("/identity", routeHandlers.RequiresAuth(db.FactsRead, db.SecretsRead), apiRoutesHandlers.GetAllIdentities)      // Get all identities
 		apiRoutes.DELETE("/identity/:id", routeHandlers.RequiresAuth(db.FactsRead, db.SecretsRead), apiRoutesHandlers.DeleteIdentity) // Delete an identity
 
 		// Managing facts
-		apiRoutes.GET("/fact/:id", /*routeHandlers.RequiresAuth(db.FactsRead),*/ apiRoutesHandlers.GetIdentityFacts)         // Get all indentity facts
+		apiRoutes.GET("/fact/:id", routeHandlers.RequiresAuth(db.FactsRead), apiRoutesHandlers.GetIdentityFacts)         // Get all indentity facts
 		apiRoutes.GET("/fact/:id/:fact", routeHandlers.RequiresAuth(db.FactsRead), apiRoutesHandlers.GetIdentityFact)    // Get specific fact of identity
-		apiRoutes.PUT("/fact/:id/:fact", /*routeHandlers.RequiresAuth(db.FactsWrite),*/ apiRoutesHandlers.SetIdentityFact)   // Set fact for identity
+		apiRoutes.PUT("/fact/:id/:fact", routeHandlers.RequiresAuth(db.FactsWrite), apiRoutesHandlers.SetIdentityFact)   // Set fact for identity
 		apiRoutes.DELETE("/fact/:id/:fact", routeHandlers.RequiresAuth(db.FactsWrite), apiRoutesHandlers.DeleteIdentity) // Delete single fact for identity
 
 		// Managing secrets
@@ -128,8 +132,12 @@ func main() {
 	uiRoutes := r.Group("/ui")
 	{
 		uiRoutes.GET("/", uiRoutesHandlers.HomeDashboard)
-		uiRoutes.GET("/fact/:id", uiRoutesHandlers.IdentityFactsDashboard)
+		uiRoutes.POST("/htmx/searchIdentities", uiRoutesHandlers.IdentitySearch)
+
+		uiRoutes.GET("/identity/:id", uiRoutesHandlers.IdentityFactsDashboard)
 		uiRoutes.GET("/htmx/fact/:id", uiRoutesHandlers.IdentityFactsTable)
+		uiRoutes.GET("/htmx/fact/:id/:fact/edit", uiRoutesHandlers.EditIdentityFactRowForm)
+		uiRoutes.PUT("/htmx/fact/:id/:fact", uiRoutesHandlers.EditIdentityFactRow)
 	}
 
 	// Authentication

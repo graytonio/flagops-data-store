@@ -26,6 +26,7 @@ type SecretsProviderOptions struct {
 }
 
 type UserDatabaseOptions struct {
+	RequireAuth bool `mapstructure:"require_auth"`
 	PostgresDSN string `mapstructure:"dsn"`
 	JWTSecret string `mapstructure:"signing_secret"`
 	AccessTokenExpirationMinutes int `mapstructure:"access_token_expiration_minutes"`
@@ -56,6 +57,7 @@ func ParseConfig() (*Config, error) {
 			ASMDeletionRecoveryDays: 7,
 		},
 		UserDatabaseOptions: UserDatabaseOptions{
+			RequireAuth: true,
 			JWTSecret: "flagops-salt",
 			AccessTokenExpirationMinutes: 15,
 			RefreshTokenExpirationMinutes: 720,

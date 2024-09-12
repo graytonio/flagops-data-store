@@ -21,6 +21,11 @@ func ErrorLogger() gin.HandlerFunc {
 
 func (r *Routes) RequiresAuth(permissions ...string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		if !r.Config.UserDatabaseOptions.RequireAuth {
+			ctx.Next()
+			return
+		}
+		
 		accessToken, _ := ctx.Cookie("access-token")
 		refreshToken, _ := ctx.Cookie("refresh-token")
 

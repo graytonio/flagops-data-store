@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin/render"
-	"github.com/graytonio/flagops-data-storage/templates/layout"
 
 	"github.com/a-h/templ"
 )
@@ -50,7 +49,7 @@ func (t Renderer) Render(w http.ResponseWriter) error {
 		w.WriteHeader(t.Status)
 	}
 	if t.Component != nil {
-		return layout.Layout(t.Component).Render(t.Ctx, w)
+		return t.Component.Render(t.Ctx, w)
 	}
 	return nil
 }
