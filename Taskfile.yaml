@@ -10,6 +10,8 @@ tasks:
       - templ generate
       - npx tailwindcss -i ./assets/tailwind.css -o ./assets/dist/styles.css
   run:
+    deps:
+      - assets
     cmds:
       - docker compose up --build
   test:

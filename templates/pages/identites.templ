@@ -1,30 +1,36 @@
 package pages
 
-// TODO Searchable list of identities linking to identity details page
+templ IdentitiesSearchResults(identities []string) {
+	for _, i := range identities {
+		<tr>
+			<td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+				<a href={ templ.SafeURL("/ui/identity/" + i) }>{ i }</a>
+			</td>
+		</tr>
+	}
+}
+
 templ IdentitiesPage() {
-    
-}
-
-type DashboardViewData struct {
-	Identities []string
-}
-
-templ DashboardContent(viewData DashboardViewData) {
 	<div class="mt-8 flow-root">
 		<div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
 			<div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
 				<div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+					<input
+						class="form-control m-2 block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+						type="search"
+						name="search"
+						placeholder="Filter..."
+						hx-post="/ui/htmx/searchIdentities"
+						hx-trigger="input changed delay:500ms, search"
+						hx-target="#search-results"
+					/>
 					<table class="min-w-full divide-y divide-gray-300">
 						<thead class="bg-gray-50">
 							<tr>
 								<th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Identities</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-gray-200 bg-white">
-							for _, i := range viewData.Identities {
-								<td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{ i }</td>
-							}
-						</tbody>
+						<tbody id="search-results" class="divide-y divide-gray-200 bg-white"></tbody>
 					</table>
 				</div>
 			</div>
