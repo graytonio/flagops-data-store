@@ -1,8 +1,10 @@
 package flagopsdatastore
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 
@@ -180,4 +182,110 @@ func (p *Provider) StringEvaluation(ctx context.Context, flag string, defaultVal
 
 	evalCtx = injectIdentityContext(context, evalCtx)
 	return p.featureProvider.StringEvaluation(ctx, flag, defaultValue, evalCtx)
+}
+
+func (p *Provider) GetIdentityFacts(ctx context.Context, identity string) (map[string]string, error) {
+	reqURL := p.baseURL.JoinPath("/fact", identity)
+
+	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)
+	if err != nil {
+	  return nil, err
+	}
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+	  return nil, err
+	}
+	defer resp.Body.Close()
+
+	facts := map[string]string{}
+	err = json.NewDecoder(resp.Body).Decode(&facts)
+	if err != nil {
+	  return nil, err
+	}
+
+	return facts, nil
+}
+
+func (p *Provider) SetIdentityFact(ctx context.Context, identity string, key string, value string) error {
+	reqUrl := p.baseURL.JoinPath("/fact", identity, key)
+
+	body := map[string]string{
+		"value": value,
+	}
+
+	bodyBytes := bytes.NewBuffer(nil)
+	err := json.NewEncoder(bodyBytes).Encode(body)
+	if err != nil {
+	  return err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, reqUrl.String(), bodyBytes)
+	if err != nil {
+	  return err
+	}
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+	  return err
+	}
+
+	if resp.StatusCode == 200 {
+		return nil
+	}
+
+	return errors.New(resp.Status)
+}
+
+func (p *Provider) GetIdentitySecrets(ctx context.Context, identity string) (map[string]string, error) {
+	reqURL := p.baseURL.JoinPath("/secret", identity)
+
+	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)
+	if err != nil {
+	  return nil, err
+	}
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+	  return nil, err
+	}
+	defer resp.Body.Close()
+
+	secrets := map[string]string{}
+	err = json.NewDecoder(resp.Body).Decode(&secrets)
+	if err != nil {
+	  return nil, err
+	}
+
+	return secrets, nil
+}
+
+func (p *Provider) SetIdentitySecret(ctx context.Context, identity string, key string, value string) error {
+	reqUrl := p.baseURL.JoinPath("/secret", identity, key)
+
+	body := map[string]string{
+		"value": value,
+	}
+
+	bodyBytes := bytes.NewBuffer(nil)
+	err := json.NewEncoder(bodyBytes).Encode(body)
+	if err != nil {
+	  return err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, reqUrl.String(), bodyBytes)
+	if err != nil {
+	  return err
+	}
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+	  return err
+	}
+
+	if resp.StatusCode == 200 {
+		return nil
+	}
+
+	return errors.New(resp.Status)
 }
